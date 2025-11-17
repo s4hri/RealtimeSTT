@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "realtimestt"
+version = "0.3.104"
+description = "A fast Voice Activity Detection and Transcription System"
+readme = "README.md"
+authors = [
+  { name = "Kolja Beigel", email = "kolja.beigel@web.de" }
+]
+license = { text = "MIT" }
+requires-python = ">=3.10"
+keywords = [
+  "real-time", "audio", "transcription", "speech-to-text", "voice-activity-detection",
+  "VAD", "real-time-transcription", "ambient-noise-detection", "microphone-input",
+  "faster_whisper", "speech-recognition", "voice-assistants", "audio-processing",
+  "buffered-transcription", "pyaudio", "ambient-noise-level", "voice-deactivity"
+]
+
+dependencies = [
+    "faster-whisper==1.1.1",
+    "halo==0.0.31",
+    "openwakeword>=0.4.0",
+    "pvporcupine==1.9.5",
+    "pyaudio==0.2.14",
+    "scipy==1.15.2",
+    "soundfile==0.13.1",
+    "torch>=2.9.1",
+    "torchaudio>=2.9.1",
+    "webrtcvad-wheels==2.0.14",
+    "websocket-client==1.8.0",
+    "websockets==15.0.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/KoljaB/RealTimeSTT"
+
+[tool.setuptools.packages.find]
+include = ["RealtimeSTT", "RealtimeSTT_server"]
+
+[tool.setuptools.package-data]
+RealtimeSTT = ["warmup_audio.wav"]
+
+[project.scripts]
+stt-server = "RealtimeSTT_server.stt_server:main"
+stt = "RealtimeSTT_server.stt_cli_client:main"
+

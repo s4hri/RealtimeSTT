@@ -94,11 +94,12 @@ if platform.system() != 'Darwin':
 class TranscriptionWorker:
     def __init__(self, conn, stdout_pipe, model_path, download_root, compute_type, gpu_device_index, device,
                  ready_event, shutdown_event, interrupt_stop_event, beam_size, initial_prompt, suppress_tokens,
-                 batch_size, faster_whisper_vad_filter, normalize_audio):
+                 batch_size, faster_whisper_vad_filter, normalize_audio, local_files_only):
         self.conn = conn
         self.stdout_pipe = stdout_pipe
         self.model_path = model_path
         self.download_root = download_root
+        self.local_files_only = local_files_only
         self.compute_type = compute_type
         self.gpu_device_index = gpu_device_index
         self.device = device
@@ -148,6 +149,7 @@ class TranscriptionWorker:
                 compute_type=self.compute_type,
                 device_index=self.gpu_device_index,
                 download_root=self.download_root,
+                local_files_only=self.local_files_only,
             )
             # Create a short dummy audio array, for example 1 second of silence at 16 kHz
             if self.batch_size > 0:
@@ -253,6 +255,7 @@ class AudioToTextRecorder:
     def __init__(self,
                  model: str = INIT_MODEL_TRANSCRIPTION,
                  download_root: str = None, 
+                 local_files_only: bool = False,
                  language: str = "",
                  compute_type: str = "default",
                  input_device_index: int = None,
@@ -279,6 +282,7 @@ class AudioToTextRecorder:
                  realtime_batch_size: int = 16,
 
                  # Voice activation parameters
+                 silero_load_func: callable = None,
                  silero_sensitivity: float = INIT_SILERO_SENSITIVITY,
                  silero_use_onnx: bool = False,
                  silero_deactivity_detection: bool = False,
@@ -350,6 +354,9 @@ class AudioToTextRecorder:
             from the Hugging Face Hub.
         - download_root (str, default=None): Specifies the root path were the Whisper models 
           are downloaded to. When empty, the default is used. 
+        - local_files_only (bool, default=False): During faster Whisper download, 
+            avoid downloading the file and return the path to the local 
+            cached file if it exists.
         - language (str, default=""): Language code for speech-to-text engine.
             If not specified, the model will attempt to detect the language
             automatically.
@@ -365,12 +372,14 @@ class AudioToTextRecorder:
             threads
         - device (str, default="cuda"): Device for model to use. Can either be 
             "cuda" or "cpu".
+
         - on_recording_start (callable, default=None): Callback function to be
             called when recording of audio to be transcripted starts.
         - on_recording_stop (callable, default=None): Callback function to be
             called when recording of audio to be transcripted stops.
         - on_transcription_start (callable, default=None): Callback function
             to be called when transcription of audio to text starts.
+
         - ensure_sentence_starting_uppercase (bool, default=True): Ensures
             that every sentence detected by the algorithm starts with an
             uppercase letter.
@@ -397,6 +406,7 @@ class AudioToTextRecorder:
             Using separate models allows for a smaller, faster model for
             real-time transcription while keeping a more accurate model for
             final transcription.
+
         - realtime_model_type (str, default="tiny"): Specifies the machine
             learning model to be used for real-time transcription. Valid
             options include 'tiny', 'tiny.en', 'base', 'base.en', 'small',
@@ -418,6 +428,10 @@ class AudioToTextRecorder:
             slight delay compared to the regular real-time updates.
         - realtime_batch_size (int, default=16): Batch size for the real-time
             transcription model.
+
+        - silero_load_func: (callable, default=None): Function to use in place
+            of `torch.hub.load` to load the Silero VAD model from 
+            https://github.com/snakers4/silero-vad.
         - silero_sensitivity (float, default=SILERO_SENSITIVITY): Sensitivity
             for the Silero Voice Activity Detection model ranging from 0
             (least sensitive) to 1 (most sensitive). Default is 0.5.
@@ -617,6 +631,7 @@ class AudioToTextRecorder:
         if not download_root:
             download_root = None
         self.download_root = download_root
+        self.local_files_only = local_files_only
         self.realtime_model_type = realtime_model_type
         self.realtime_processing_pause = realtime_processing_pause
         self.init_realtime_after_seconds = init_realtime_after_seconds
@@ -646,6 +661,7 @@ class AudioToTextRecorder:
         self.silero_check_time = 0
         self.silero_working = False
         self.speech_end_silence_start = 0
+        self.silero_load_func = silero_load_func
         self.silero_sensitivity = silero_sensitivity
         self.silero_deactivity_detection = silero_deactivity_detection
         self.listen_start = 0
@@ -737,7 +753,10 @@ class AudioToTextRecorder:
         self.parent_stdout_pipe, child_stdout_pipe = SafePipe()
 
         # Set device for model
-        self.device = "cuda" if self.device == "cuda" and torch.cuda.is_available() else "cpu"
+        # self.device = "cuda" if self.device == "cuda" and torch.cuda.is_available() else "cpu"
+        if self.device == "cuda" and not torch.cuda.is_available():
+            logger.error("cuda device is not available! Please switch to `cpu`")
+            raise Exception("cuda device is not available! Please switch to `cpu`")
 
         self.transcript_process = self._start_thread(
             target=AudioToTextRecorder._transcription_worker,
@@ -758,6 +777,7 @@ class AudioToTextRecorder:
                 self.batch_size,
                 self.faster_whisper_vad_filter,
                 self.normalize_audio,
+                self.local_files_only
             )
         )
 
@@ -797,6 +817,7 @@ class AudioToTextRecorder:
                     compute_type=self.compute_type,
                     device_index=self.gpu_device_index,
                     download_root=self.download_root,
+                    local_files_only=self.local_files_only,
                 )
                 if self.realtime_batch_size > 0:
                     self.realtime_model_type = BatchedInferencePipeline(model=self.realtime_model_type)
@@ -919,12 +940,17 @@ class AudioToTextRecorder:
 
         # Setup voice activity detection model Silero VAD
         try:
-            self.silero_vad_model, _ = torch.hub.load(
-                repo_or_dir="snakers4/silero-vad",
-                model="silero_vad",
-                verbose=False,
-                onnx=silero_use_onnx
-            )
+            if self.silero_load_func:
+                self.silero_vad_model, _ = self.silero_load_func(
+                    onnx=silero_use_onnx
+                )
+            else:
+                self.silero_vad_model, _ = torch.hub.load(
+                    repo_or_dir="snakers4/silero-vad",
+                    model="silero_vad",
+                    verbose=False,
+                    onnx=silero_use_onnx
+                )
 
         except Exception as e:
             logger.exception(f"Error initializing Silero VAD "
