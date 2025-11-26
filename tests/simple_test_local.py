@@ -40,7 +40,7 @@ if __name__ == '__main__':
     recorder = AudioToTextRecorder(model='large-v3', #'tiny', #large-v3', 
                                     debug_mode=True, 
                                     silero_sensitivity=0.01,
-                                    language='it',
+                                    language='en',
                                     silero_load_func=silero_vad,
                                     download_root=DIR_CACHE_WHISPER)
     while True:
