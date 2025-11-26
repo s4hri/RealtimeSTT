@@ -1,17 +1,17 @@
-.gitignore
-_open_cmd.bat
-docs/
-examples/
-batch/
-test_env/
-tests_private/
-docs/
-docs_private/
-env_realtimestt/
-example_rvc/assets/
-server/
-RealtimeSTT.code-workspace
-check_versions.py
+# .gitignore
+# _open_cmd.bat
+# docs/
+# examples/
+# batch/
+# test_env/
+# tests_private/
+# docs/
+# docs_private/
+# env_realtimestt/
+# example_rvc/assets/
+# server/
+# RealtimeSTT.code-workspace
+# check_versions.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
