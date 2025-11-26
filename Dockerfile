@@ -66,7 +66,7 @@ RUN tar -xvf cudnn-linux-x86_64-9.1.0.70_cuda12-archive.tar.xz && \
 # install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# ENV PYTHONPATH="/workdir:${PYTHONPATH}"
+ENV PYTHONPATH="/workdir:${PYTHONPATH}"
 
 # necessary for the microphone
 #RUN apt-get update && apt-get install -y pulseaudio pulseaudio-utils
