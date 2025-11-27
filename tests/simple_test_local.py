@@ -26,7 +26,7 @@ def download_silero_vad(dir_output):
 def download_whisper(dir_output, model_name_hf):
     model_name = model_name_hf.replace("/", "___")
 
-    dir_model = os.path.join(dir_output, 'whisper_models', model_name)
+    dir_model = os.path.join(dir_output, model_name)
     if os.path.exists(dir_model):
         print(f"Whisper model already downloaded in {dir_model}")
         return dir_model
@@ -69,7 +69,7 @@ from hubconf import silero_vad
 
 
 if __name__ == '__main__':
-    dir_model = download_whisper(DIR_CACHE, "Systran/faster-whisper-tiny")
+    dir_model = download_whisper(DIR_CACHE_WHISPER, "Systran/faster-whisper-tiny")
 
     print("Wait until it says 'speak now'")
     recorder = AudioToTextRecorder(model=dir_model,

@@ -14,7 +14,6 @@ WORKDIR /workdir
 
 COPY . ./
 
-COPY ./packages.apt ./packages.apt
 RUN apt-get update && xargs -a packages.apt apt-get install -y
 
 
