@@ -37,7 +37,7 @@ from hubconf import silero_vad
 if __name__ == '__main__':
 
     print("Wait until it says 'speak now'")
-    recorder = AudioToTextRecorder(model='large-v3', #'tiny',
+    recorder = AudioToTextRecorder(model='tiny', #'large-v3', #'tiny',
                                     debug_mode=True, 
                                     silero_sensitivity=0.01,
                                     language='en',

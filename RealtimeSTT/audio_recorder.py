@@ -1417,7 +1417,7 @@ class AudioToTextRecorder:
             self.stop()
 
 
-    def wait_audio(self):
+    def wait_audio(self, timeout_wait_start=None, timeout_wait_stop=None):
         """
         Waits for the start and completion of the audio recording process.
 
@@ -1431,7 +1431,9 @@ class AudioToTextRecorder:
         - Updates the state of the instance.
         - Modifies the audio attribute to contain the processed audio data.
         """
-
+        timeout_start_recording_event_wait = 0.02
+        timeout_stop_recording_event_wait = 0.02
+        
         try:
             logger.info("Setting listen time")
             if self.listen_start == 0:
@@ -1443,10 +1445,17 @@ class AudioToTextRecorder:
                 self.start_recording_on_voice_activity = True
 
                 # Wait until recording starts
+                remaining_time_wait = timeout_wait_start
                 logger.debug('Waiting for recording start')
                 while not self.interrupt_stop_event.is_set():
-                    if self.start_recording_event.wait(timeout=0.02):
+                    if self.start_recording_event.wait(timeout=timeout_start_recording_event_wait):
                         break
+                    if not (remaining_time_wait is None):
+                        remaining_time_wait -= timeout_start_recording_event_wait
+                        if remaining_time_wait <= 0.0:
+                            elapsed = time.time() - self.listen_start
+                            logger.info(f'Timeout during waiting for recording start. In total {elapsed=} seconds')
+                            break
 
             # If recording is ongoing, wait for voice inactivity
             # to finish recording.
@@ -1454,10 +1463,17 @@ class AudioToTextRecorder:
                 self.stop_recording_on_voice_deactivity = True
 
                 # Wait until recording stops
+                remaining_time_wait = timeout_wait_stop
                 logger.debug('Waiting for recording stop')
                 while not self.interrupt_stop_event.is_set():
-                    if (self.stop_recording_event.wait(timeout=0.02)):
+                    if (self.stop_recording_event.wait(timeout=timeout_stop_recording_event_wait)):
                         break
+                    if not (remaining_time_wait is None):
+                        remaining_time_wait -= timeout_stop_recording_event_wait
+                        if remaining_time_wait <= 0.0:
+                            elapsed = time.time() - self.listen_start
+                            logger.info(f'Timeout during waiting for recording stop. In total {elapsed=} seconds')
+                            break
 
             frames = self.frames
             if len(frames) == 0:
@@ -1656,6 +1672,7 @@ class AudioToTextRecorder:
 
     def text(self,
              on_transcription_finished=None,
+             timeout_wait_start=None, timeout_wait_stop=None
              ):
         """
         Transcribes audio captured by this class instance
@@ -1674,14 +1691,18 @@ class AudioToTextRecorder:
               the callback will receive the transcription as its argument.
               If omitted, the transcription will be performed synchronously,
               and the result will be returned.
-
+            timeout_wait_start (float, optional): Timeout in seconds during
+                the wait for the start of the recording
+            timeout_wait_stop (float, optional): Timeout in seconds during
+                the wait for the stop of the recording          
         Returns (if not callback is set):
             str: The transcription of the recorded audio
         """
         self.interrupt_stop_event.clear()
         self.was_interrupted.clear()
         try:
-            self.wait_audio()
+            self.wait_audio(timeout_wait_start=timeout_wait_start, 
+                            timeout_wait_stop=timeout_wait_stop)
         except KeyboardInterrupt:
             logger.info("KeyboardInterrupt in text() method")
             self.shutdown()
