@@ -7,7 +7,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        DOCKER_SRC: iitschri/yarp-docker:v3.9.0
+        DOCKER_SRC: nvidia/cuda:12.8.0-cudnn-devel-ubuntu22.04
 
     stdin_open: true
     tty: true
@@ -46,8 +46,8 @@ services:
       - ${SSH_AUTH_SOCK:-/dev/null}:/ssh-agent
       - ${HOME}/.gitconfig:/root/.gitconfig:ro
 
-    command: ["/bin/bash", "-c", "yarpserver --write & sleep 3; yarprun --server /yarpsrv --log"]
-
+    command: ["/bin/bash", "-c", "tail -f /dev/null"]
+    
 volumes:
   workdir:
   cache:

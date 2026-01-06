@@ -87,8 +87,13 @@ if __name__ == '__main__':
         If the timeout occurs during wait stop:
             text will be cut
         '''
+
+        # to fix, after timeout, the system continue to listen
+        print("Listening...")
         text = recorder.text(timeout_wait_start=3.0,
                             timeout_wait_stop=30.0)
         if len(text) == 0:
             print("TIMEOUT while waiting for start!")
-        print(text)
+            os.system("aplay /workdir/RealtimeSTT/warmup_audio.wav")
+        else:
+            print(text)
