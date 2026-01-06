@@ -3,6 +3,7 @@ import torch
 import sys
 import os 
 
+import time
 import huggingface_hub
 from RealtimeSTT import AudioToTextRecorder
 
@@ -67,16 +68,25 @@ DIR_CACHE_SILERO_VAD = download_silero_vad(DIR_CACHE)
 sys.path.append(DIR_CACHE_SILERO_VAD)
 from hubconf import silero_vad
 
+def my_start_callback():
+    print("\nRecording started!")
+
+def my_stop_callback():
+    print("\nRecording stopped!")
 
 if __name__ == '__main__':
     dir_model = download_whisper(DIR_CACHE_WHISPER, "Systran/faster-whisper-tiny")
+    #dir_model = download_whisper(DIR_CACHE_WHISPER, "Systran___faster-whisper-large-v3")
 
     print("Wait until it says 'speak now'")
     recorder = AudioToTextRecorder(model=dir_model,
                                     debug_mode=True, 
                                     silero_sensitivity=0.01,
                                     language='en',
-                                    silero_load_func=silero_vad)
+                                    silero_load_func=silero_vad,
+                                    on_recording_start=my_start_callback,
+                                    on_recording_stop=my_stop_callback
+                                    )
     while True:
         '''
         timeout_wait_start: Timeout during waiting for speech start
@@ -90,10 +100,14 @@ if __name__ == '__main__':
 
         # to fix, after timeout, the system continue to listen
         print("Listening...")
-        text = recorder.text(timeout_wait_start=3.0,
-                            timeout_wait_stop=30.0)
-        if len(text) == 0:
-            print("TIMEOUT while waiting for start!")
+        try:
+            text = recorder.text(timeout_wait_start=10.0,
+                                timeout_wait_stop=30.0)
+            print(f"{text=}")
+        except TimeoutError as e:
+            #recorder.stop()
+            print(f"\n{e}")
+            time.sleep(1)
             os.system("aplay /workdir/RealtimeSTT/warmup_audio.wav")
-        else:
-            print(text)
+
+        print("\n", "#"*50, '\n\n')
