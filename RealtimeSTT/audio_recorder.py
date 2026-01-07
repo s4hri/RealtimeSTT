@@ -270,6 +270,7 @@ class AudioToTextRecorder:
                  spinner=True,
                  level=logging.WARNING,
                  batch_size: int = 16,
+                 allowed_recording: bool = True,
 
                  # Realtime transcription parameters
                  enable_realtime_transcription=False,
@@ -372,6 +373,9 @@ class AudioToTextRecorder:
             threads
         - device (str, default="cuda"): Device for model to use. Can either be 
             "cuda" or "cpu".
+
+        - allowed_recording (bool, default=True): Enable recording at startup or
+            not. Flag used to avoid to record when is not neeeded
 
         - on_recording_start (callable, default=None): Callback function to be
             called when recording of audio to be transcripted starts.
@@ -970,6 +974,9 @@ class AudioToTextRecorder:
             maxlen=int((self.sample_rate // self.buffer_size) *
                        0.3)
         )
+        # used in _recording_worker to avoid to record when is not neeeded
+        # default at start allowed_recording = True
+        self.allowed_recording = allowed_recording
         self.frames = []
         self.last_frames = []
 
@@ -1434,6 +1441,8 @@ class AudioToTextRecorder:
         timeout_start_recording_event_wait = 0.02
         timeout_stop_recording_event_wait = 0.02
         
+        timeout_start_occurred = False
+        timeout_stop_occurred = False
         try:
             logger.info("Setting listen time")
             if self.listen_start == 0:
@@ -1455,8 +1464,9 @@ class AudioToTextRecorder:
                         if remaining_time_wait <= 0.0:
                             elapsed = time.time() - self.listen_start
                             logger.info(f'Timeout during waiting for recording start. In total {elapsed=} seconds')
+                            #print("timeout wait start")
+                            timeout_start_occurred = True
                             break
-
             # If recording is ongoing, wait for voice inactivity
             # to finish recording.
             if self.is_recording:
@@ -1473,7 +1483,10 @@ class AudioToTextRecorder:
                         if remaining_time_wait <= 0.0:
                             elapsed = time.time() - self.listen_start
                             logger.info(f'Timeout during waiting for recording stop. In total {elapsed=} seconds')
+                            #print("timeout wait end")
+                            timeout_stop_occurred = True
                             break
+                            
 
             frames = self.frames
             if len(frames) == 0:
@@ -1532,12 +1545,19 @@ class AudioToTextRecorder:
             self.listen_start = 0
 
             self._set_state("inactive")
+            #print("\nreached end wait_audio!")
 
         except KeyboardInterrupt:
             logger.info("KeyboardInterrupt in wait_audio, shutting down")
             self.shutdown()
             raise  # Re-raise the exception after cleanup
 
+        if timeout_start_occurred:
+            raise TimeoutError("Timeout start recording")
+
+        if timeout_stop_occurred:
+            # no raise exception, the text is simply cut
+            print("Timeout stop occurred")
 
     def perform_final_transcription(self, audio_bytes=None, use_prompt=True):
         start_time = 0
@@ -1698,11 +1718,35 @@ class AudioToTextRecorder:
         Returns (if not callback is set):
             str: The transcription of the recorded audio
         """
+        # used _recording_worker to avoid voice activation starts a recording
+        # outside the call to text() function
+        self.allowed_recording = True
+
+        # CLEANING
+        self.frames.clear()
+        self.last_frames.clear()
+        self.text_storage = []
+        self.realtime_stabilized_text = ""
+        self.realtime_stabilized_safetext = ""
+        self.wakeword_detected = False
+        self.wake_word_detect_time = 0
+        #
+        self.is_silero_speech_active = False
+        self.is_webrtc_speech_active = False
+        self.stop_recording_event.clear()
+        self.start_recording_event.clear()
+        ###########################################
+
+
         self.interrupt_stop_event.clear()
         self.was_interrupted.clear()
         try:
             self.wait_audio(timeout_wait_start=timeout_wait_start, 
                             timeout_wait_stop=timeout_wait_stop)
+            self.allowed_recording = False
+        except TimeoutError as e:
+            self.allowed_recording = False
+            raise e
         except KeyboardInterrupt:
             logger.info("KeyboardInterrupt in text() method")
             self.shutdown()
@@ -1950,7 +1994,6 @@ class AudioToTextRecorder:
                 logger.debug('Debug: Starting main loop')
             # Continuously monitor audio for voice activity
             while self.is_running:
-
                 # if self.use_extended_logging:
                 #     logger.debug('Debug: Entering inner try block')
                 if last_inner_try_time:
@@ -2118,7 +2161,7 @@ class AudioToTextRecorder:
                         if self.use_extended_logging:
                             logger.debug('Debug: Checking if voice is active')
 
-                        if self._is_voice_active():
+                        if self._is_voice_active() and self.allowed_recording:
 
                             if self.on_vad_start:
                                self._run_callback(self.on_vad_start)
