@@ -85,7 +85,8 @@ if __name__ == '__main__':
                                     language='en',
                                     silero_load_func=silero_vad,
                                     on_recording_start=my_start_callback,
-                                    on_recording_stop=my_stop_callback
+                                    on_recording_stop=my_stop_callback,
+                                    allowed_recording=False # it will allowed in text()
                                     )
     while True:
         '''

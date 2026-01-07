@@ -270,6 +270,7 @@ class AudioToTextRecorder:
                  spinner=True,
                  level=logging.WARNING,
                  batch_size: int = 16,
+                 allowed_recording: bool = True,
 
                  # Realtime transcription parameters
                  enable_realtime_transcription=False,
@@ -372,6 +373,9 @@ class AudioToTextRecorder:
             threads
         - device (str, default="cuda"): Device for model to use. Can either be 
             "cuda" or "cpu".
+
+        - allowed_recording (bool, default=True): Enable recording at startup or
+            not. Flag used to avoid to record when is not neeeded
 
         - on_recording_start (callable, default=None): Callback function to be
             called when recording of audio to be transcripted starts.
@@ -970,7 +974,9 @@ class AudioToTextRecorder:
             maxlen=int((self.sample_rate // self.buffer_size) *
                        0.3)
         )
-        self.allowed_recording = True
+        # used in _recording_worker to avoid to record when is not neeeded
+        # default at start allowed_recording = True
+        self.allowed_recording = allowed_recording
         self.frames = []
         self.last_frames = []
 
