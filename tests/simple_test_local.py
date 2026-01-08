@@ -101,9 +101,12 @@ if __name__ == '__main__':
 
         # to fix, after timeout, the system continue to listen
         print("Listening...")
+        kwargs = {
+            "timeout_wait_start": 30.0,
+            "timeout_wait_stop": 30.0
+        }
         try:
-            text = recorder.text(timeout_wait_start=10.0,
-                                timeout_wait_stop=30.0)
+            text = recorder.text(**kwargs)
             print(f"{text=}")
         except TimeoutError as e:
             #recorder.stop()
