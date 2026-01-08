@@ -76,7 +76,7 @@ def my_stop_callback():
 
 if __name__ == '__main__':
     dir_model = download_whisper(DIR_CACHE_WHISPER, "Systran/faster-whisper-tiny")
-    #dir_model = download_whisper(DIR_CACHE_WHISPER, "Systran___faster-whisper-large-v3")
+    #dir_model = download_whisper(DIR_CACHE_WHISPER, "Systran/faster-whisper-large-v3")
 
     print("Wait until it says 'speak now'")
     recorder = AudioToTextRecorder(model=dir_model,
@@ -99,7 +99,6 @@ if __name__ == '__main__':
             text will be cut
         '''
 
-        # to fix, after timeout, the system continue to listen
         print("Listening...")
         kwargs = {
             "timeout_wait_start": 30.0,
