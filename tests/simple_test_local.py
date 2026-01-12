@@ -113,10 +113,10 @@ def on_vad_stop():
 
 
 config = {
-    "silero_sensitivity": 0.1,
+    "silero_sensitivity": 0.01,
     "webrtc_sensitivity": 3,
-    "silero_use_onnx": True,
-    "silero_deactivity_detection": True,
+    "silero_use_onnx": False,
+    "silero_deactivity_detection": False,
     "post_speech_silence_duration": 0.6
 }
 if __name__ == '__main__':
