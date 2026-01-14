@@ -66,7 +66,9 @@ DIR_CACHE_WHISPER = os.path.join(DIR_CACHE, "whisper_models")
 
 DIR_CACHE_SILERO_VAD = download_silero_vad(DIR_CACHE)
 sys.path.append(DIR_CACHE_SILERO_VAD)
+sys.path.insert(0, "/root/.cache/torch/hub/snakers4_silero-vad_master")
 from hubconf import silero_vad
+
 
 def on_recording_start():
     print("\nRecording started!")
@@ -121,7 +123,7 @@ config = {
 }
 if __name__ == '__main__':
     dir_model = download_whisper(DIR_CACHE_WHISPER, "Systran/faster-whisper-tiny")
-    #dir_model = download_whisper(DIR_CACHE_WHISPER, "Systran___faster-whisper-large-v3")
+    #dir_model = download_whisper(DIR_CACHE_WHISPER, "Systran/faster-whisper-large-v3")
 
     kwargs = config
     kwargs.update({

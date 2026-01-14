@@ -40,7 +40,7 @@ import faster_whisper
 import openwakeword
 import collections
 import numpy as np
-import pvporcupine
+#import pvporcupine
 import traceback
 import threading
 import webrtcvad
@@ -260,7 +260,7 @@ class AudioToTextRecorder:
                  compute_type: str = "default",
                  input_device_index: int = None,
                  gpu_device_index: Union[int, List[int]] = 0,
-                 device: str = "cuda",
+                 device: str = "cpu",
                  on_recording_start=None,
                  on_recording_stop=None,
                  on_transcription_start=None,
