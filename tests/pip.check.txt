@@ -1,0 +1,3 @@
+pygobject 3.42.1 requires pycairo, which is not installed.
+realtimestt 0.3.104 has requirement torch>=2.9.1, but you have torch 2.4.0.
+realtimestt 0.3.104 has requirement torchaudio>=2.9.1, but you have torchaudio 2.4.0a0+69d4077.

@@ -122,8 +122,8 @@ config = {
     "post_speech_silence_duration": 0.6
 }
 if __name__ == '__main__':
-    dir_model = download_whisper(DIR_CACHE_WHISPER, "Systran/faster-whisper-tiny")
-    #dir_model = download_whisper(DIR_CACHE_WHISPER, "Systran/faster-whisper-large-v3")
+    #dir_model = download_whisper(DIR_CACHE_WHISPER, "Systran/faster-whisper-tiny")
+    dir_model = download_whisper(DIR_CACHE_WHISPER, "Systran/faster-whisper-large-v3")
 
     kwargs = config
     kwargs.update({

@@ -260,7 +260,7 @@ class AudioToTextRecorder:
                  compute_type: str = "default",
                  input_device_index: int = None,
                  gpu_device_index: Union[int, List[int]] = 0,
-                 device: str = "cpu",
+                 device: str = "cuda",
                  on_recording_start=None,
                  on_recording_stop=None,
                  on_transcription_start=None,
