@@ -9,3 +9,4 @@ pulseaudio
 pulseaudio-utils
 python3-dev 
 portaudio19-dev
+python3.10-venv
