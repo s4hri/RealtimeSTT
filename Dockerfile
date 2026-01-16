@@ -60,8 +60,8 @@ RUN git clone --depth 1 --branch v4.6.3 --recurse-submodule https://github.com/O
 # --- Build wheel Python (richiede pybind11) e install ---
 RUN python3 -m pip install --upgrade pip setuptools wheel pybind11
 RUN cd /opt/CTranslate2/python \
-&& python3 setup.py bdist_wheel \
-&& python3 -m pip install --force-reinstall dist/*.whl
+&& python3 setup.py bdist_wheel 
+#&& python3 -m pip install --force-reinstall dist/*.whl
 
 # -----------------------------
 # Virtual environment (keeps system site-packages visible for system-provided CUDA Torch)
@@ -87,6 +87,10 @@ RUN uv sync --frozen --active \
 # - NumPy < 2 for compatibility with onnxruntime 1.16.3 (Py3.10 / aarch64)
 # - Install onnxruntime without pulling dependency upgrades
 # -----------------------------
+
+RUN cd /opt/CTranslate2/python \ 
+&& python3 -m pip install --force-reinstall dist/*.whl
+
 RUN python3 -m pip install --no-cache-dir --index-url https://pypi.org/simple \
     --no-deps "numpy==1.26.4"
 RUN python3 -m pip install --no-cache-dir --index-url https://pypi.org/simple \
