@@ -151,12 +151,12 @@ if __name__ == '__main__':
 
         # to fix, after timeout, the system continue to listen
         print("Listening...")
-        kwargs = {
+        kwargs_text = {
             "timeout_wait_start": 30.0,
             "timeout_wait_stop": 30.0
         }
         try:
-            text = recorder.text(**kwargs)
+            text = recorder.text(**kwargs_text)
             print(f"{text=}")
         except TimeoutError as e:
             #recorder.stop()
@@ -165,4 +165,10 @@ if __name__ == '__main__':
             os.system("aplay /workdir/RealtimeSTT/warmup_audio.wav")
 
         print("\n", "#"*50, '\n\n')
-        
+
+        print("Shutting down...")
+        recorder.shutdown()
+
+        print("Restarting...")
+        recorder = AudioToTextRecorder(**kwargs)
+
